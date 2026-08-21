@@ -9,7 +9,14 @@ const status = document.getElementById('status')
 
 const doc = new Y.Doc()
 const text = doc.getText()
-const room = joinRoom({appId: 'ColabText'}, location.hash.slice(1) || 'lobby', {
+// TURN relay fallback: when NATs block a direct connection (symmetric NAT, AP client isolation),
+// WebRTC falls back to relaying through this server. Free tier; credentials are public by design.
+const TURN_SERVER = {
+  urls: 'turn:free.expressturn.com:3478',
+  username: '000000002102714863',
+  credential: 'N7bwZqx8Q776diSA+rrvCrliDqs=',
+}
+const room = joinRoom({appId: 'ColabText', turnConfig: [TURN_SERVER]}, location.hash.slice(1) || 'lobby', {
   onJoinError: ({error}) => { status.textContent = `Could not connect to a peer: ${error}` },
 })
 const updates = room.makeAction('update')
