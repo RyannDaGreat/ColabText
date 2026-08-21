@@ -1,0 +1,15 @@
+:root {
+  --bg: #1e1e1e;
+  --fg: #e0e0e0;
+  --muted: #888;
+  --pad: 1rem;
+  --text-size: 1.1rem;
+  --status-size: 0.9rem;
+}
+html, body { height: 100%; margin: 0; background: var(--bg); color: var(--fg); font-family: monospace; }
+body { display: flex; flex-direction: column; }
+textarea {
+  flex: 1; padding: var(--pad); font: inherit; font-size: var(--text-size);
+  background: inherit; color: inherit; border: none; outline: none; resize: none;
+}
+#status { padding: var(--pad); font-size: var(--status-size); color: var(--muted); }
