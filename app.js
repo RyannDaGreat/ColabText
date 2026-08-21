@@ -9,7 +9,9 @@ const status = document.getElementById('status')
 
 const doc = new Y.Doc()
 const text = doc.getText()
-const room = joinRoom({appId: 'ColabText'}, location.hash.slice(1) || 'lobby')
+const room = joinRoom({appId: 'ColabText'}, location.hash.slice(1) || 'lobby', {
+  onJoinError: ({error}) => { status.textContent = `Could not connect to a peer: ${error}` },
+})
 const updates = room.makeAction('update')
 
 // Network: broadcast my edits, apply everyone else's, and give newcomers the whole doc.
