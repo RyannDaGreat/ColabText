@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ColabText - VS Code</title>
+  <link rel="stylesheet" href="app.css">
+  <!-- Import map: every shared package appears exactly once, so CodeMirror and Yjs never get
+       duplicate instances (the classic CDN failure mode). esm.sh's *pkg prefix means
+       "externalize all deps", making each package resolve its imports through this map. -->
+  <script type="importmap">
+  {
+    "imports": {
+      "yjs": "https://esm.sh/yjs@13.6.32",
+      "trystero": "https://esm.sh/trystero@0.25.3",
+      "lib0/": "https://esm.sh/lib0@0.2.117/",
+      "y-protocols/awareness": "https://esm.sh/*y-protocols@1.0.7/awareness",
+      "y-codemirror.next": "https://esm.sh/*y-codemirror.next@0.3.6",
+      "codemirror": "https://esm.sh/*codemirror@6.0.2",
+      "@codemirror/state": "https://esm.sh/*@codemirror/state@6.7.1",
+      "@codemirror/view": "https://esm.sh/*@codemirror/view@6.43.9",
+      "@codemirror/language": "https://esm.sh/*@codemirror/language@6.12.4",
+      "@codemirror/commands": "https://esm.sh/*@codemirror/commands@6.11.0",
+      "@codemirror/search": "https://esm.sh/*@codemirror/search@6.7.1",
+      "@codemirror/autocomplete": "https://esm.sh/*@codemirror/autocomplete@6.20.3",
+      "@codemirror/lint": "https://esm.sh/*@codemirror/lint@6.9.7",
+      "@codemirror/lang-python": "https://esm.sh/*@codemirror/lang-python@6.2.1",
+      "@codemirror/theme-one-dark": "https://esm.sh/*@codemirror/theme-one-dark@6.1.3",
+      "@lezer/common": "https://esm.sh/*@lezer/common@1.5.2",
+      "@lezer/highlight": "https://esm.sh/*@lezer/highlight@1.2.3",
+      "@lezer/lr": "https://esm.sh/*@lezer/lr@1.4.10",
+      "@lezer/python": "https://esm.sh/*@lezer/python@1.1.19",
+      "@marijn/find-cluster-break": "https://esm.sh/@marijn/find-cluster-break@1.0.4",
+      "style-mod": "https://esm.sh/style-mod@4.1.3",
+      "w3c-keyname": "https://esm.sh/w3c-keyname@2.2.8",
+      "crelt": "https://esm.sh/crelt@1.0.7"
+    }
+  }
+  </script>
+</head>
+<body>
+  <nav><span class="brand">ColabText</span><a href="../..">Textarea</a><a href="." class="active">VS Code</a></nav>
+  <div id="editor"></div>
+  <div id="status">Connecting…</div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

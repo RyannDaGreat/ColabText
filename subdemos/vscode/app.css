@@ -3,19 +3,17 @@
   --fg: #e0e0e0;
   --muted: #888;
   --accent: #30bced;
-  --nav-gap: 1rem;
   --pad: 1rem;
-  --text-size: 1.1rem;
+  --nav-gap: 1rem;
   --status-size: 0.9rem;
+  --editor-size: 1rem;
 }
 html, body { height: 100%; margin: 0; background: var(--bg); color: var(--fg); font-family: monospace; }
-nav { display: flex; gap: var(--nav-gap); padding: var(--pad) var(--pad) 0; }
+body { display: flex; flex-direction: column; }
+nav { display: flex; gap: var(--nav-gap); padding: var(--pad); }
 nav .brand { color: var(--muted); }
 nav a { color: var(--fg); text-decoration: none; }
 nav a.active { color: var(--accent); }
-body { display: flex; flex-direction: column; }
-textarea {
-  flex: 1; padding: var(--pad); font: inherit; font-size: var(--text-size);
-  background: inherit; color: inherit; border: none; outline: none; resize: none;
-}
+#editor { flex: 1; min-height: 0; }
+#editor .cm-editor { height: 100%; font-size: var(--editor-size); }
 #status { padding: var(--pad); font-size: var(--status-size); color: var(--muted); }

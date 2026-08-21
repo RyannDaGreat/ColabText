@@ -13,6 +13,12 @@ Two libraries, loaded straight from a CDN, do all the work — see `app.js` (~60
 - **[Yjs](https://github.com/yjs/yjs)** — a CRDT. Every peer applies everyone's edits in any order and ends up with the same text. This is what makes concurrent typing merge instead of clobber.
 - **[Trystero](https://github.com/dmotz/trystero)** — WebRTC peer discovery ("signaling") over public Nostr relays, so nobody has to run a signaling server. Payloads are end-to-end encrypted; the relays only help peers find each other.
 
+## Sub-demos
+
+Each entry in the top toolbar is a self-contained demo in `subdemos/` (own HTML/JS/CSS, no imports from the parent):
+
+- **[VS Code](https://ryanndagreat.github.io/ColabText/subdemos/vscode/)** (`subdemos/vscode/`) — shared Python editor: CodeMirror 6 + [y-codemirror.next](https://github.com/yjs/y-codemirror.next), which renders every peer's named, colored cursor and selection via the Yjs awareness protocol. The import map in its `index.html` pins every package to one copy — CodeMirror breaks if `@codemirror/state` is ever loaded twice.
+
 ## Run locally
 
     python3 -m http.server 8000
