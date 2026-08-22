@@ -44,6 +44,20 @@ function addVideo(id, stream, {muted = false, mirrored = false} = {}) {
   grid.append(video)
 }
 
+// Mute stops your mic reaching others (kills feedback loops between nearby devices);
+// stopping video drops the encoder to near-zero bitrate, saving bandwidth. Both toggle
+// track.enabled, which keeps the connection up and is instantly reversible.
+const micButton = document.getElementById('mic')
+const camButton = document.getElementById('cam')
+micButton.onclick = () => toggleTrack(selfStream.getAudioTracks()[0], micButton, 'Mute mic', 'Unmute mic')
+camButton.onclick = () => toggleTrack(selfStream.getVideoTracks()[0], camButton, 'Stop video', 'Start video')
+
+/** Command. Flips track.enabled and updates the button label to the action it now offers. */
+function toggleTrack(track, button, onLabel, offLabel) {
+  track.enabled = !track.enabled
+  button.textContent = track.enabled ? onLabel : offLabel
+}
+
 /** Command. Writes the number of connected peers to the status bar. */
 function showPeers() {
   const n = Object.keys(room.getPeers()).length

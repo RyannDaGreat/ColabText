@@ -9,6 +9,7 @@
   --tile-min: 240px;
   --tile-gap: 0.5rem;
   --tile-radius: 8px;
+  --button-pad: 0.5rem 1rem;
 }
 html, body { height: 100%; margin: 0; background: var(--bg); color: var(--fg); font-family: monospace; }
 body { display: flex; flex-direction: column; }
@@ -19,8 +20,13 @@ nav a.active { color: var(--accent); }
 #grid {
   flex: 1; min-height: 0; padding: 0 var(--pad);
   display: grid; gap: var(--tile-gap); align-content: start;
-  grid-template-columns: repeat(auto-fit, minmax(var(--tile-min), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--tile-min), 100%), 1fr));
 }
 #grid video { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--tile-radius); background: black; }
 #grid video.mirrored { transform: scaleX(-1); }
-#status { padding: var(--pad); font-size: var(--status-size); color: var(--muted); }
+#controls { display: flex; gap: var(--nav-gap); padding: var(--pad) var(--pad) 0; }
+#controls button {
+  padding: var(--button-pad); font: inherit; color: var(--fg);
+  background: none; border: 1px solid var(--muted); border-radius: var(--tile-radius); cursor: pointer;
+}
+#status { padding: var(--pad); font-size: var(--status-size); color: var(--muted); overflow-wrap: anywhere; }
