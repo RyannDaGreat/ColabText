@@ -12,7 +12,7 @@ const text = doc.getText()
 // TURN relay fallback: when NATs block a direct connection (symmetric NAT, AP client isolation),
 // WebRTC falls back to relaying through this server. Free tier; credentials are public by design.
 const TURN_SERVER = {
-  urls: 'turn:free.expressturn.com:3478',
+  urls: ['turn:free.expressturn.com:3478', 'turn:free.expressturn.com:3478?transport=tcp'],
   username: '000000002102714863',
   credential: 'N7bwZqx8Q776diSA+rrvCrliDqs=',
 }

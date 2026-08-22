@@ -13,7 +13,7 @@ import {yCollab} from 'y-codemirror.next'
 
 // TURN relay fallback for NAT-hostile networks (duplicated from the parent demo: sub-demos are self-contained).
 const TURN_SERVER = {
-  urls: 'turn:free.expressturn.com:3478',
+  urls: ['turn:free.expressturn.com:3478', 'turn:free.expressturn.com:3478?transport=tcp'],
   username: '000000002102714863',
   credential: 'N7bwZqx8Q776diSA+rrvCrliDqs=',
 }
