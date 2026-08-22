@@ -13,6 +13,9 @@ const doc = new Y.Doc()
 const text = doc.getText()
 // TURN relay fallback: when NATs block a direct connection (symmetric NAT, AP client isolation),
 // WebRTC falls back to relaying through this server. Free tier; credentials are public by design.
+// Trystero picks this many public Nostr relays (shuffled deterministically by appId, so every
+// client uses the same set). The default 5 leaves discovery crawling when a couple are down.
+const RELAY_COUNT = 10
 const TURN_SERVER = {
   // ExpressTURN's hostname round-robins across servers and one can be dead while still answering;
   // listing each server lets ICE try them all and use whichever actually relays.
@@ -21,7 +24,7 @@ const TURN_SERVER = {
   username: '000000002102714863',
   credential: 'N7bwZqx8Q776diSA+rrvCrliDqs=',
 }
-const room = joinRoom({appId: 'ColabText', turnConfig: [TURN_SERVER]}, location.hash.slice(1) || 'lobby', {
+const room = joinRoom({appId: 'ColabText', turnConfig: [TURN_SERVER], relayConfig: {redundancy: RELAY_COUNT}}, location.hash.slice(1) || 'lobby', {
   onJoinError: ({error}) => { status.textContent = `Could not connect to a peer: ${error}` },
 })
 const updates = room.makeAction('update')

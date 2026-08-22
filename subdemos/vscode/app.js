@@ -12,6 +12,9 @@ import {oneDark} from '@codemirror/theme-one-dark'
 import {yCollab} from 'y-codemirror.next'
 
 // TURN relay fallback for NAT-hostile networks (duplicated from the parent demo: sub-demos are self-contained).
+// Trystero picks this many public Nostr relays (shuffled deterministically by appId, so every
+// client uses the same set). The default 5 leaves discovery crawling when a couple are down.
+const RELAY_COUNT = 10
 const TURN_SERVER = {
   // ExpressTURN's hostname round-robins across servers and one can be dead while still answering;
   // listing each server lets ICE try them all and use whichever actually relays.
@@ -27,7 +30,7 @@ const status = document.getElementById('status')
 window.onerror = (message) => { status.textContent = `Error: ${message}` }
 const doc = new Y.Doc()
 const text = doc.getText()
-const room = joinRoom({appId: 'ColabText-vscode', turnConfig: [TURN_SERVER]}, location.hash.slice(1) || 'lobby', {
+const room = joinRoom({appId: 'ColabText-vscode', turnConfig: [TURN_SERVER], relayConfig: {redundancy: RELAY_COUNT}}, location.hash.slice(1) || 'lobby', {
   onJoinError: ({error}) => { status.textContent = `Could not connect to a peer: ${error}` },
 })
 const updates = room.makeAction('update')
