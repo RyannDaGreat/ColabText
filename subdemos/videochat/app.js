@@ -15,6 +15,7 @@ const grid = document.getElementById('grid')
 const status = document.getElementById('status')
 // Surface any uncaught error in the status bar — a dead page must say why (Safari especially).
 window.onerror = (message) => { status.textContent = `Error: ${message}` }
+window.onunhandledrejection = ({reason}) => { status.textContent = `Error: ${reason}` }
 const dataCounter = document.getElementById('data')
 const micButton = document.getElementById('mic')
 const camButton = document.getElementById('cam')
@@ -112,6 +113,54 @@ function formatBytes(bytes) {
   return (bytes / 2 ** (10 * i)).toFixed(i ? 1 : 0) + ' ' + units[i]
 }
 
+// Layout: the grid is a fixed box (never scrolls). Whenever tiles or the window change,
+// solve for the column count that makes every tile as large as possible while all still fit.
+new ResizeObserver(layoutGrid).observe(grid)
+
+/** Command. Sizes the grid's columns/rows so all tiles fit the grid box at maximum size. */
+function layoutGrid() {
+  const tiles = [...grid.children]
+  if (!tiles.length) return
+  const gap = parseFloat(getComputedStyle(grid).gap)
+  const {cols, tileWidth, tileHeight} = bestGrid(tiles.length, grid.clientWidth, grid.clientHeight, averageAspect(tiles), gap)
+  grid.style.gridTemplateColumns = `repeat(${cols}, ${tileWidth}px)`
+  grid.style.gridAutoRows = `${tileHeight}px`
+}
+
+/**
+ * Pure function. Largest uniform tile (of aspect ratio `aspect` = width/height) such that `count`
+ * tiles fit inside a width x height box with `gap` px between tiles. Tries every column count.
+ *
+ * @returns {{cols: number, rows: number, tileWidth: number, tileHeight: number}} sizes in whole px
+ *
+ * @example bestGrid(4, 1000, 1000, 1, 0)  // {cols: 2, rows: 2, tileWidth: 500, tileHeight: 500}
+ * @example bestGrid(3, 1200, 300, 1, 0)   // {cols: 3, rows: 1, tileWidth: 300, tileHeight: 300}
+ * @example bestGrid(2, 300, 1000, 1, 0)   // {cols: 1, rows: 2, tileWidth: 300, tileHeight: 300}
+ */
+function bestGrid(count, width, height, aspect, gap) {
+  let best = {cols: 1, rows: count, tileWidth: 0, tileHeight: 0}
+  for (let cols = 1; cols <= count; cols++) {
+    const rows = Math.ceil(count / cols)
+    const tileWidth = Math.floor(Math.min((width - gap * (cols - 1)) / cols, (height - gap * (rows - 1)) / rows * aspect))
+    if (tileWidth > best.tileWidth) best = {cols, rows, tileWidth, tileHeight: Math.floor(tileWidth / aspect)}
+  }
+  return best
+}
+
+/**
+ * Pure function. Mean width/height ratio of the videos that have frames; 4/3 if none do yet.
+ *
+ * @param {HTMLVideoElement[]} videos
+ * @returns {number}
+ *
+ * @example averageAspect([{videoWidth: 1600, videoHeight: 900}, {videoWidth: 900, videoHeight: 1600}])  // 1.17 (16/9 and 9/16 averaged)
+ * @example averageAspect([{videoWidth: 0, videoHeight: 0}])  // 1.333
+ */
+function averageAspect(videos) {
+  const ratios = videos.filter(v => v.videoWidth && v.videoHeight).map(v => v.videoWidth / v.videoHeight)
+  return ratios.length ? ratios.reduce((sum, r) => sum + r, 0) / ratios.length : 4 / 3
+}
+
 /**
  * Command. Adds a tile to the grid playing `stream` (replacing any existing tile for `id`).
  * The self tiles are muted (no echo); the camera one is mirrored (what people expect of their own image).
@@ -121,16 +170,20 @@ function addVideo(id, stream, {muted = false, mirrored = false} = {}) {
   const video = document.createElement('video')
   video.id = 'video-' + id
   video.classList.toggle('mirrored', mirrored)
-  video.srcObject = stream
-  video.autoplay = true
-  video.playsInline = true
+  video.autoplay = true      // Safari: playback flags must be set BEFORE srcObject,
+  video.playsInline = true   // and remote streams need an explicit play() or they sit black.
   video.muted = muted
+  video.srcObject = stream
+  video.onloadedmetadata = layoutGrid   // aspect ratio is known now
   grid.append(video)
+  video.play()
+  layoutGrid()
 }
 
-/** Command. Removes the tile for `id`, if present. */
+/** Command. Removes the tile for `id`, if present, and re-solves the layout. */
 function removeVideo(id) {
   document.getElementById('video-' + id)?.remove()
+  layoutGrid()
 }
 
 /** Command. Writes the number of connected peers to the status bar. */
