@@ -3,13 +3,15 @@
   --fg: #e0e0e0;
   --muted: #888;
   --accent: #30bced;
+  --off: #ee6352;
   --pad: 1rem;
   --nav-gap: 1rem;
   --status-size: 0.9rem;
   --tile-min: 240px;
   --tile-gap: 0.5rem;
   --tile-radius: 8px;
-  --button-pad: 0.5rem 1rem;
+  --button-size: 3rem;
+  --icon-size: 1.4rem;
 }
 html, body { height: 100%; margin: 0; background: var(--bg); color: var(--fg); font-family: monospace; }
 body { display: flex; flex-direction: column; }
@@ -24,9 +26,13 @@ nav a.active { color: var(--accent); }
 }
 #grid video { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--tile-radius); background: black; }
 #grid video.mirrored { transform: scaleX(-1); }
-#controls { display: flex; gap: var(--nav-gap); padding: var(--pad) var(--pad) 0; }
+#controls { display: flex; justify-content: center; gap: var(--nav-gap); padding: var(--pad) var(--pad) 0; }
 #controls button {
-  padding: var(--button-pad); font: inherit; color: var(--fg);
-  background: none; border: 1px solid var(--muted); border-radius: var(--tile-radius); cursor: pointer;
+  width: var(--button-size); height: var(--button-size); border-radius: 50%;
+  display: grid; place-items: center; font-size: var(--icon-size);
+  color: var(--fg); background: none; border: 1px solid var(--muted); cursor: pointer;
 }
+#controls button.off { color: var(--off); border-color: var(--off); }
+#statusbar { display: flex; justify-content: space-between; align-items: baseline; gap: var(--nav-gap); }
 #status { padding: var(--pad); font-size: var(--status-size); color: var(--muted); overflow-wrap: anywhere; }
+#data { padding: var(--pad); font-size: var(--status-size); color: var(--muted); white-space: nowrap; }

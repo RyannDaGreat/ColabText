@@ -5,15 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ColabText - Video Chat</title>
   <link rel="stylesheet" href="app.css">
+  <script src="https://cdn.jsdelivr.net/npm/iconify-icon@3.0.2/dist/iconify-icon.min.js"></script>
 </head>
 <body>
   <nav><span class="brand">ColabText</span><a href="../..">Home</a><a href="." class="active">Video Chat</a></nav>
   <div id="grid"></div>
   <div id="controls">
-    <button id="mic">Mute mic</button>
-    <button id="cam">Stop video</button>
+    <button id="mic" title="Mute / unmute microphone"><iconify-icon icon="mdi:microphone"></iconify-icon></button>
+    <button id="cam" title="Stop / start video"><iconify-icon icon="mdi:video"></iconify-icon></button>
+    <button id="screen" title="Share / stop sharing screen" class="off"><iconify-icon icon="mdi:monitor-off"></iconify-icon></button>
   </div>
-  <div id="status">Requesting camera…</div>
+  <div id="statusbar">
+    <div id="status">Requesting camera…</div>
+    <div id="data">0 B</div>
+  </div>
   <script type="module" src="app.js"></script>
 </body>
 </html>
