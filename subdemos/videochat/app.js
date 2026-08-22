@@ -10,6 +10,7 @@ const TURN_SERVER = {
   credential: 'N7bwZqx8Q776diSA+rrvCrliDqs=',
 }
 const STATS_INTERVAL_MS = 1000
+const STREAM_START_TIMEOUT_MS = 5000   // remote tile still black after this -> ask the peer to re-send
 
 const grid = document.getElementById('grid')
 const status = document.getElementById('status')
@@ -32,14 +33,17 @@ const room = joinRoom({appId: 'ColabText-videochat', turnConfig: [TURN_SERVER]},
   onJoinError: ({error}) => { status.textContent = `Could not connect to a peer: ${error}` },
 })
 const screenOff = room.makeAction('screenoff')   // tells peers to drop my screen tile
+const resend = room.makeAction('resend')         // "your stream never started here, send it again"
 let screenStream = null
 
-room.onPeerJoin = peer => {
-  room.addStream(selfStream, {target: peer, metadata: 'camera'})
-  if (screenStream) room.addStream(screenStream, {target: peer, metadata: 'screen'})
-  showPeers()
+room.onPeerJoin = peer => { sendStreams(peer); showPeers() }
+room.onPeerStream = (stream, peer, metadata) => {
+  const video = addVideo(metadata === 'screen' ? peer + '-screen' : peer, stream)
+  // Safari sometimes loses the renegotiation race and a stream arrives but never plays; a fresh
+  // add from the sender's side kicks off a new negotiation that does.
+  setTimeout(() => { if (video.isConnected && !video.videoWidth) resend.send(null, {target: peer}) }, STREAM_START_TIMEOUT_MS)
 }
-room.onPeerStream = (stream, peer, metadata) => addVideo(metadata === 'screen' ? peer + '-screen' : peer, stream)
+resend.onMessage = (_, {peerId}) => { room.removeStream(selfStream, {target: peerId}); sendStreams(peerId) }
 room.onPeerLeave = peer => { removeVideo(peer); removeVideo(peer + '-screen'); showPeers() }
 screenOff.onMessage = (_, {peerId}) => removeVideo(peerId + '-screen')
 showPeers()
@@ -50,6 +54,12 @@ showPeers()
 micButton.onclick = () => toggleTrack(selfStream.getAudioTracks()[0], micButton, 'mdi:microphone', 'mdi:microphone-off')
 camButton.onclick = () => toggleTrack(selfStream.getVideoTracks()[0], camButton, 'mdi:video', 'mdi:video-off')
 screenButton.onclick = toggleScreenShare
+
+/** Command. Sends my camera and, if sharing, my screen to one peer. */
+function sendStreams(peer) {
+  room.addStream(selfStream, {target: peer, metadata: 'camera'})
+  if (screenStream) room.addStream(screenStream, {target: peer, metadata: 'screen'})
+}
 
 /** Command. Flips track.enabled and restyles the button to show the new state. */
 function toggleTrack(track, button, onIcon, offIcon) {
@@ -162,7 +172,7 @@ function averageAspect(videos) {
 }
 
 /**
- * Command. Adds a tile to the grid playing `stream` (replacing any existing tile for `id`).
+ * Command. Adds a tile to the grid playing `stream` (replacing any existing tile for `id`); returns it.
  * The self tiles are muted (no echo); the camera one is mirrored (what people expect of their own image).
  */
 function addVideo(id, stream, {muted = false, mirrored = false} = {}) {
@@ -176,8 +186,9 @@ function addVideo(id, stream, {muted = false, mirrored = false} = {}) {
   video.srcObject = stream
   video.onloadedmetadata = layoutGrid   // aspect ratio is known now
   grid.append(video)
-  video.play()
+  video.play().catch(error => { if (error.name !== 'AbortError') throw error })   // AbortError = tile replaced mid-play, expected
   layoutGrid()
+  return video
 }
 
 /** Command. Removes the tile for `id`, if present, and re-solves the layout. */
