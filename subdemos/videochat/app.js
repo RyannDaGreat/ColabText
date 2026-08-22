@@ -1,7 +1,7 @@
 // ColabText video chat: a party call, no server. Everyone who opens the page joins one big grid.
 //   Trystero handles peer discovery (Nostr relays) AND media: addStream() sends a stream to a peer,
 //   onPeerStream fires when theirs arrives, with metadata telling camera and screen share apart.
-import {joinRoom} from 'https://esm.sh/trystero@0.25.3'
+import {joinRoom, getRelaySockets} from 'https://esm.sh/trystero@0.25.3'
 
 // TURN relay fallback for NAT-hostile networks (duplicated from the parent demo: sub-demos are self-contained).
 // Trystero picks this many public Nostr relays (shuffled deterministically by appId, so every
@@ -103,8 +103,9 @@ function setButton(button, on, onIcon, offIcon) {
   button.querySelector('iconify-icon').setAttribute('icon', on ? onIcon : offIcon)
 }
 
-// Data counter + connection kinds, bottom right: cumulative WebRTC bytes (sent + received, every
-// peer) and whether each live connection is direct peer-to-peer or going through the TURN relay.
+// Bottom-right readout: how many signaling relays are connected (discovery needs at least one that
+// the other person also reaches), whether each live connection is direct peer-to-peer or through
+// the TURN relay, and cumulative WebRTC bytes (sent + received, every peer).
 // Per-peer last readings are kept so the byte total survives peers leaving.
 let bytesTotal = 0
 const bytesSeen = {}
@@ -119,7 +120,8 @@ setInterval(async () => {
     bytesSeen[peer] = bytes
     kinds.push(connectionKind(stats))
   }
-  dataCounter.textContent = [...summarize(kinds), formatBytes(bytesTotal)].join(' · ')
+  const relaysOpen = Object.values(getRelaySockets()).filter(socket => socket.readyState === WebSocket.OPEN).length
+  dataCounter.textContent = [`${relaysOpen} relays`, ...summarize(kinds), formatBytes(bytesTotal)].join(' · ')
 }, STATS_INTERVAL_MS)
 
 /**
