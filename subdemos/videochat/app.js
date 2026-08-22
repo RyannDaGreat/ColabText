@@ -5,7 +5,7 @@ import {joinRoom} from 'https://esm.sh/trystero@0.25.3'
 
 // TURN relay fallback for NAT-hostile networks (duplicated from the parent demo: sub-demos are self-contained).
 const TURN_SERVER = {
-  urls: ['turn:free.expressturn.com:3478', 'turn:free.expressturn.com:3478?transport=tcp'],
+  urls: 'turn:free.expressturn.com:3478',   // no ?transport=tcp variant: Safari rejects TURN URLs with a query string
   username: '000000002102714863',
   credential: 'N7bwZqx8Q776diSA+rrvCrliDqs=',
 }
@@ -13,6 +13,8 @@ const STATS_INTERVAL_MS = 1000
 
 const grid = document.getElementById('grid')
 const status = document.getElementById('status')
+// Surface any uncaught error in the status bar — a dead page must say why (Safari especially).
+window.onerror = (message) => { status.textContent = `Error: ${message}` }
 const dataCounter = document.getElementById('data')
 const micButton = document.getElementById('mic')
 const camButton = document.getElementById('cam')

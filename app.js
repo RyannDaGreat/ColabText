@@ -6,13 +6,15 @@ import {joinRoom} from 'https://esm.sh/trystero@0.25.3'
 
 const area = document.getElementById('text')
 const status = document.getElementById('status')
+// Surface any uncaught error in the status bar — a dead page must say why (Safari especially).
+window.onerror = (message) => { status.textContent = `Error: ${message}` }
 
 const doc = new Y.Doc()
 const text = doc.getText()
 // TURN relay fallback: when NATs block a direct connection (symmetric NAT, AP client isolation),
 // WebRTC falls back to relaying through this server. Free tier; credentials are public by design.
 const TURN_SERVER = {
-  urls: ['turn:free.expressturn.com:3478', 'turn:free.expressturn.com:3478?transport=tcp'],
+  urls: 'turn:free.expressturn.com:3478',   // no ?transport=tcp variant: Safari rejects TURN URLs with a query string
   username: '000000002102714863',
   credential: 'N7bwZqx8Q776diSA+rrvCrliDqs=',
 }

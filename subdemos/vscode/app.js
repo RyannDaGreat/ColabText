@@ -13,13 +13,15 @@ import {yCollab} from 'y-codemirror.next'
 
 // TURN relay fallback for NAT-hostile networks (duplicated from the parent demo: sub-demos are self-contained).
 const TURN_SERVER = {
-  urls: ['turn:free.expressturn.com:3478', 'turn:free.expressturn.com:3478?transport=tcp'],
+  urls: 'turn:free.expressturn.com:3478',   // no ?transport=tcp variant: Safari rejects TURN URLs with a query string
   username: '000000002102714863',
   credential: 'N7bwZqx8Q776diSA+rrvCrliDqs=',
 }
 const USER_COLORS = ['#30bced', '#6eeb83', '#ffbc42', '#ecd444', '#ee6352', '#9ac2c9', '#8acb88', '#1be7ff']
 
 const status = document.getElementById('status')
+// Surface any uncaught error in the status bar — a dead page must say why (Safari especially).
+window.onerror = (message) => { status.textContent = `Error: ${message}` }
 const doc = new Y.Doc()
 const text = doc.getText()
 const room = joinRoom({appId: 'ColabText-vscode', turnConfig: [TURN_SERVER]}, location.hash.slice(1) || 'lobby', {
