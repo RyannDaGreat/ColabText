@@ -14,6 +14,8 @@ const TURN_SERVER = {
 }
 const STATS_INTERVAL_MS = 1000
 const STREAM_START_TIMEOUT_MS = 5000   // remote tile still black after this -> ask the peer to re-send
+const DEFAULT_ASPECT = 4 / 3           // a tile's aspect ratio until its video reports a size
+const SCALE_SEARCH_STEPS = 30          // tile-packing binary search: box size / 2^30 is far below a pixel
 
 const grid = document.getElementById('grid')
 const status = document.getElementById('status')
@@ -126,52 +128,86 @@ function formatBytes(bytes) {
   return (bytes / 2 ** (10 * i)).toFixed(i ? 1 : 0) + ' ' + units[i]
 }
 
-// Layout: the grid is a fixed box (never scrolls). Whenever tiles or the window change,
-// solve for the column count that makes every tile as large as possible while all still fit.
+// Layout: the grid is a fixed box (never scrolls). Whenever tiles or the window change, every tile
+// is packed into the box at its own aspect ratio and ONE shared scale (constant "DPI": a portrait
+// phone and a landscape laptop show faces the same size), as large as will fit. Pure geometry below.
 new ResizeObserver(layoutGrid).observe(grid)
 
-/** Command. Sizes the grid's columns/rows so all tiles fit the grid box at maximum size. */
+/** Command. Packs all tiles into the grid box and positions each video absolutely. */
 function layoutGrid() {
   const tiles = [...grid.children]
   if (!tiles.length) return
-  const gap = parseFloat(getComputedStyle(grid).gap)
-  const {cols, tileWidth, tileHeight} = bestGrid(tiles.length, grid.clientWidth, grid.clientHeight, averageAspect(tiles), gap)
-  grid.style.gridTemplateColumns = `repeat(${cols}, ${tileWidth}px)`
-  grid.style.gridAutoRows = `${tileHeight}px`
+  const gap = parseFloat(getComputedStyle(grid).getPropertyValue('--tile-gap'))
+  // Unit-height sizes: equal tile heights. (Use {width: videoWidth, height: videoHeight} for literal same-DPI.)
+  const sizes = tiles.map(v => ({width: v.videoWidth && v.videoHeight ? v.videoWidth / v.videoHeight : DEFAULT_ASPECT, height: 1}))
+  const {rects} = packTiles(sizes, grid.clientWidth, grid.clientHeight, gap)
+  tiles.forEach((video, i) => Object.assign(video.style,
+    {left: rects[i].x + 'px', top: rects[i].y + 'px', width: rects[i].width + 'px', height: rects[i].height + 'px'}))
 }
 
 /**
- * Pure function. Largest uniform tile (of aspect ratio `aspect` = width/height) such that `count`
- * tiles fit inside a width x height box with `gap` px between tiles. Tries every column count.
+ * Pure function. Packs rectangles of the given sizes (any unit) into a boxWidth x boxHeight box,
+ * `gap` px apart, all multiplied by ONE scale factor — the largest at which they still fit.
+ * Tiles keep their order and flow into rows left to right (first-fit shelf packing); rows are
+ * centered horizontally and the block vertically. Fitting is monotone in the scale, so a binary
+ * search finds the optimum to sub-pixel precision.
  *
- * @returns {{cols: number, rows: number, tileWidth: number, tileHeight: number}} sizes in whole px
+ * @param {{width: number, height: number}[]} sizes
+ * @returns {{scale: number, rects: {x: number, y: number, width: number, height: number}[], coverage: number}}
  *
- * @example bestGrid(4, 1000, 1000, 1, 0)  // {cols: 2, rows: 2, tileWidth: 500, tileHeight: 500}
- * @example bestGrid(3, 1200, 300, 1, 0)   // {cols: 3, rows: 1, tileWidth: 300, tileHeight: 300}
- * @example bestGrid(2, 300, 1000, 1, 0)   // {cols: 1, rows: 2, tileWidth: 300, tileHeight: 300}
+ * @example packTiles([{width: 1, height: 1}, {width: 1, height: 1}], 200, 100, 0)   // scale 100: two squares side by side, coverage 1
+ * @example packTiles([{width: 1, height: 1}, {width: 1, height: 1}], 100, 200, 0)   // scale 100: stacked, coverage 1
+ * @example packTiles([{width: 16, height: 9}, {width: 9, height: 16}], 300, 300, 0)  // scale 12: a 192x108 tile beside a 108x192 one, coverage ≈ 0.46
  */
-function bestGrid(count, width, height, aspect, gap) {
-  let best = {cols: 1, rows: count, tileWidth: 0, tileHeight: 0}
-  for (let cols = 1; cols <= count; cols++) {
-    const rows = Math.ceil(count / cols)
-    const tileWidth = Math.floor(Math.min((width - gap * (cols - 1)) / cols, (height - gap * (rows - 1)) / rows * aspect))
-    if (tileWidth > best.tileWidth) best = {cols, rows, tileWidth, tileHeight: Math.floor(tileWidth / aspect)}
+function packTiles(sizes, boxWidth, boxHeight, gap) {
+  let low = 0, high = boxHeight / Math.min(...sizes.map(s => s.height))
+  for (let step = 0; step < SCALE_SEARCH_STEPS; step++) {
+    const mid = (low + high) / 2
+    if (fits(shelfRows(sizes, mid, boxWidth, gap), mid, boxWidth, boxHeight, gap)) low = mid; else high = mid
   }
-  return best
+  const rows = shelfRows(sizes, low, boxWidth, gap), rects = []
+  let y = (boxHeight - rows.reduce((sum, row) => sum + rowHeight(row, low), 0) - gap * (rows.length - 1)) / 2
+  for (const row of rows) {
+    const h = rowHeight(row, low)
+    let x = (boxWidth - rowWidth(row, low, gap)) / 2
+    for (const s of row) { rects.push({x, y: y + (h - s.height * low) / 2, width: s.width * low, height: s.height * low}); x += s.width * low + gap }
+    y += h + gap
+  }
+  return {scale: low, rects, coverage: rects.reduce((sum, r) => sum + r.width * r.height, 0) / (boxWidth * boxHeight)}
 }
 
 /**
- * Pure function. Mean width/height ratio of the videos that have frames; 4/3 if none do yet.
- *
- * @param {HTMLVideoElement[]} videos
- * @returns {number}
- *
- * @example averageAspect([{videoWidth: 1600, videoHeight: 900}, {videoWidth: 900, videoHeight: 1600}])  // 1.17 (16/9 and 9/16 averaged)
- * @example averageAspect([{videoWidth: 0, videoHeight: 0}])  // 1.333
+ * Pure function. Splits ordered sizes into rows: each joins the current row if the row still fits
+ * the width at this scale, else starts a new one (first-fit shelf packing, order preserved).
+ * @example shelfRows([{width: 1, height: 1}, {width: 1, height: 1}, {width: 1, height: 1}], 100, 250, 0)   // [[first, second], [third]]
  */
-function averageAspect(videos) {
-  const ratios = videos.filter(v => v.videoWidth && v.videoHeight).map(v => v.videoWidth / v.videoHeight)
-  return ratios.length ? ratios.reduce((sum, r) => sum + r, 0) / ratios.length : 4 / 3
+function shelfRows(sizes, scale, boxWidth, gap) {
+  const rows = [[]]
+  for (const s of sizes) {
+    const row = rows[rows.length - 1]
+    if (row.length && rowWidth([...row, s], scale, gap) > boxWidth) rows.push([s]); else row.push(s)
+  }
+  return rows
+}
+
+/** Pure function. Width of a row at this scale, gaps included. @example rowWidth([{width: 1, height: 1}, {width: 2, height: 1}], 100, 10)   // 310 */
+function rowWidth(row, scale, gap) {
+  return row.reduce((sum, s) => sum + s.width * scale, 0) + gap * (row.length - 1)
+}
+
+/** Pure function. Height of a row at this scale: its tallest tile. @example rowHeight([{width: 1, height: 1}, {width: 1, height: 2}], 100)   // 200 */
+function rowHeight(row, scale) {
+  return Math.max(...row.map(s => s.height * scale))
+}
+
+/**
+ * Pure function. Whether these rows, at this scale, fit the box in both directions.
+ * @example fits([[{width: 1, height: 1}, {width: 1, height: 1}]], 100, 200, 100, 0)   // true
+ * @example fits([[{width: 1, height: 1}, {width: 1, height: 1}]], 100, 150, 100, 0)   // false (row is 200 wide)
+ */
+function fits(rows, scale, boxWidth, boxHeight, gap) {
+  return rows.every(row => rowWidth(row, scale, gap) <= boxWidth) &&
+    rows.reduce((sum, row) => sum + rowHeight(row, scale), 0) + gap * (rows.length - 1) <= boxHeight
 }
 
 /**
