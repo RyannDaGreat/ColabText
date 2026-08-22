@@ -19,12 +19,16 @@ nav { display: flex; gap: var(--nav-gap); padding: var(--pad); }
 nav .brand { color: var(--muted); }
 nav a { color: var(--fg); text-decoration: none; }
 nav a.active { color: var(--accent); }
+/* The grid owns a fixed slice of the viewport (flex:1) and NEVER grows past it: columns adapt to
+   width, rows split the remaining height evenly, and tiles crop (object-fit: cover) to fill their
+   cell — so any number of tiles always fits on screen and the toolbar stays visible. */
 #grid {
   flex: 1; min-height: 0; padding: 0 var(--pad);
-  display: grid; gap: var(--tile-gap); align-content: start;
+  display: grid; gap: var(--tile-gap);
   grid-template-columns: repeat(auto-fit, minmax(min(var(--tile-min), 100%), 1fr));
+  grid-auto-rows: minmax(0, 1fr);
 }
-#grid video { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--tile-radius); background: black; }
+#grid video { width: 100%; height: 100%; object-fit: cover; border-radius: var(--tile-radius); background: black; }
 #grid video.mirrored { transform: scaleX(-1); }
 #controls { display: flex; justify-content: center; gap: var(--nav-gap); padding: var(--pad) var(--pad) 0; }
 #controls button {
