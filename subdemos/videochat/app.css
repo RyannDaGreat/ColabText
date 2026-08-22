@@ -7,7 +7,7 @@
   --pad: 1rem;
   --nav-gap: 1rem;
   --status-size: 0.9rem;
-  --tile-gap: 0.5rem;
+  --tile-gap: 8px;   /* px: app.js reads this to pack tiles */
   --tile-radius: 8px;
   --button-size: 3rem;
   --icon-size: 1.4rem;
@@ -18,14 +18,10 @@ nav { display: flex; gap: var(--nav-gap); padding: var(--pad); }
 nav .brand { color: var(--muted); }
 nav a { color: var(--fg); text-decoration: none; }
 nav a.active { color: var(--accent); }
-/* The grid is a fixed box (flex: 1 of the viewport) that never grows or scrolls. app.js solves the
-   optimal column count + exact tile size for the current tile count, aspect ratio and box size,
-   and writes grid-template-columns / grid-auto-rows. Tiles are centered as a block. */
-#grid {
-  flex: 1; min-height: 0; margin: 0 var(--pad); overflow: hidden;
-  display: grid; gap: var(--tile-gap); justify-content: center; align-content: center;
-}
-#grid video { width: 100%; height: 100%; object-fit: contain; border-radius: var(--tile-radius); background: black; }
+/* The grid is a fixed box (flex: 1 of the viewport) that never grows or scrolls. app.js packs every
+   tile at its own aspect ratio into this box (see packTiles) and sets each video's left/top/width/height. */
+#grid { flex: 1; min-height: 0; margin: 0 var(--pad); overflow: hidden; position: relative; }
+#grid video { position: absolute; object-fit: cover; border-radius: var(--tile-radius); background: black; }
 #grid video.mirrored { transform: scaleX(-1); }
 #controls { display: flex; justify-content: center; gap: var(--nav-gap); padding: var(--pad) var(--pad) 0; }
 #controls button {
